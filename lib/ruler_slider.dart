@@ -227,6 +227,10 @@ class RulerSliderState extends State<RulerSlider>
                   : widget.onChanged!(_value);
             }
           });
+        } else if (widget.onDragEnd != null) {
+          setState(() {
+            widget.onDragEnd!(_value);
+          });
         }
       },
       child: SizedBox(
