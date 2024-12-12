@@ -26,6 +26,7 @@ import 'package:flutter/material.dart';
 /// - `valueTextStyle`: The text style for the label that displays the current value.
 /// - `customLabels`: Optional custom labels for specific intervals on the ruler.
 /// - `onChanged`: A callback function that returns the selected value as the user interacts with the ruler.
+/// - `onDragEnd`: A callback function that returns the selected value at the end of the user interaction with the ruler.
 /// - `showFixedBar`: A boolean indicating whether to show a fixed bar in the center.
 /// - `fixedBarColor`: The color of the fixed bar that indicates the current value.
 /// - `fixedBarWidth`: The width of the fixed bar.
@@ -84,9 +85,6 @@ import 'package:flutter/material.dart';
 /// - The ability to customize the appearance of the fixed bar and labels.
 ///
 
-
-
-
 class RulerSlider extends StatefulWidget {
   final double minValue;
   final double maxValue;
@@ -98,6 +96,7 @@ class RulerSlider extends StatefulWidget {
   final double tickSpacing;
   final TextStyle valueTextStyle;
   final ValueChanged<double>? onChanged;
+  final ValueChanged<double>? onDragEnd;
   final List<String>? customLabels;
   final bool showFixedBar;
   final Color fixedBarColor;
@@ -128,6 +127,7 @@ class RulerSlider extends StatefulWidget {
     this.valueTextStyle = const TextStyle(color: Colors.black, fontSize: 18),
     this.customLabels,
     this.onChanged,
+    this.onDragEnd,
     this.showFixedBar = true,
     this.fixedBarColor = Colors.red,
     this.fixedBarWidth = 2.0,
@@ -149,7 +149,8 @@ class RulerSlider extends StatefulWidget {
   RulerSliderState createState() => RulerSliderState();
 }
 
-class RulerSliderState extends State<RulerSlider> with SingleTickerProviderStateMixin {
+class RulerSliderState extends State<RulerSlider>
+    with SingleTickerProviderStateMixin {
   late double _value;
   late double _rulerPosition;
   late AnimationController _animationController;
@@ -162,10 +163,12 @@ class RulerSliderState extends State<RulerSlider> with SingleTickerProviderState
     // Initialize the value and the ruler position based on the initial value
     _value = widget.initialValue;
     double totalScrollableWidth = widget.maxValue * widget.tickSpacing;
-    _rulerPosition = widget.rulerWidth / 2 - (_value / widget.maxValue) * totalScrollableWidth;
+    _rulerPosition = widget.rulerWidth / 2 -
+        (_value / widget.maxValue) * totalScrollableWidth;
 
     // Initialize the AnimationController for snapping animation
-    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _animationController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 300));
   }
 
   @override
@@ -181,8 +184,13 @@ class RulerSliderState extends State<RulerSlider> with SingleTickerProviderState
         setState(() {
           _rulerPosition += details.delta.dx * widget.scrollSensitivity;
           double totalScrollableWidth = widget.maxValue * widget.tickSpacing;
-          _rulerPosition = _rulerPosition.clamp(-totalScrollableWidth + widget.rulerWidth / 2, widget.rulerWidth / 2);
-          _value = (((widget.rulerWidth / 2 - _rulerPosition) / totalScrollableWidth) * widget.maxValue).clamp(widget.minValue, widget.maxValue);
+          _rulerPosition = _rulerPosition.clamp(
+              -totalScrollableWidth + widget.rulerWidth / 2,
+              widget.rulerWidth / 2);
+          _value = (((widget.rulerWidth / 2 - _rulerPosition) /
+                      totalScrollableWidth) *
+                  widget.maxValue)
+              .clamp(widget.minValue, widget.maxValue);
 
           if (widget.onChanged != null) {
             widget.onChanged!(_value);
@@ -197,8 +205,12 @@ class RulerSliderState extends State<RulerSlider> with SingleTickerProviderState
             double totalScrollableWidth = widget.maxValue * widget.tickSpacing;
 
             // Animate the snapping
-            _animation = Tween<double>(begin: _rulerPosition, end: widget.rulerWidth / 2 - (snappedValue / widget.maxValue) * totalScrollableWidth)
-                .animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut))
+            _animation = Tween<double>(
+                    begin: _rulerPosition,
+                    end: widget.rulerWidth / 2 -
+                        (snappedValue / widget.maxValue) * totalScrollableWidth)
+                .animate(CurvedAnimation(
+                    parent: _animationController, curve: Curves.easeOut))
               ..addListener(() {
                 setState(() {
                   _rulerPosition = _animation.value;
@@ -210,7 +222,9 @@ class RulerSliderState extends State<RulerSlider> with SingleTickerProviderState
 
             _value = snappedValue;
             if (widget.onChanged != null) {
-              widget.onChanged!(_value);
+              (widget.onDragEnd != null)
+                  ? widget.onDragEnd!(_value)
+                  : widget.onChanged!(_value);
             }
           });
         }
@@ -246,7 +260,8 @@ class RulerSliderState extends State<RulerSlider> with SingleTickerProviderState
                 top: 0,
                 child: Text(
                   _value.toStringAsFixed(1),
-                  style: widget.valueTextStyle.copyWith(color: widget.fixedLabelColor),
+                  style: widget.valueTextStyle
+                      .copyWith(color: widget.fixedLabelColor),
                 ),
               ),
             if (widget.showFixedBar)
@@ -328,7 +343,8 @@ class RulerPainter extends CustomPainter {
 
     for (double i = 0; i <= maxValue; i += 1) {
       double xPos = i * tickSpacing;
-      double tickHeight = (i % majorTickInterval == 0) ? majorTickHeight : minorTickHeight;
+      double tickHeight =
+          (i % majorTickInterval == 0) ? majorTickHeight : minorTickHeight;
 
       if (xPos <= rulerPosition.abs() + size.width / 2) {
         canvas.drawLine(
@@ -346,7 +362,10 @@ class RulerPainter extends CustomPainter {
 
       if (showBottomLabels) {
         if (i % labelInterval == 0) {
-          String label = customLabels != null && i ~/ labelInterval < customLabels!.length ? customLabels![i ~/ labelInterval] : i.toStringAsFixed(0);
+          String label =
+              customLabels != null && i ~/ labelInterval < customLabels!.length
+                  ? customLabels![i ~/ labelInterval]
+                  : i.toStringAsFixed(0);
 
           TextPainter textPainter = TextPainter(
             text: TextSpan(
@@ -356,7 +375,10 @@ class RulerPainter extends CustomPainter {
             textDirection: TextDirection.ltr,
           );
           textPainter.layout();
-          textPainter.paint(canvas, Offset(xPos - textPainter.width / 2, size.height / 2 + labelVerticalOffset));
+          textPainter.paint(
+              canvas,
+              Offset(xPos - textPainter.width / 2,
+                  size.height / 2 + labelVerticalOffset));
         }
       }
     }
