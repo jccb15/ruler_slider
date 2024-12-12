@@ -34,6 +34,7 @@ Here are some screenshots showcasing the RulerSlider in action:
 - **`valueTextStyle`**: (TextStyle) Style for the label that shows the current value.
 - **`customLabels`**: (List<String>?) Optional custom labels for specific tick intervals.
 - **`onChanged`**: (ValueChanged<double>?) Callback that returns the selected value.
+- **`onDragEnd`**: (ValueChanged<double>?) Callback that returns the selected value at end the of the interaction.
 - **`showFixedBar`**: (bool) Whether to display a fixed center bar for current value indication.
 - **`fixedBarColor`**: (Color) Color of the fixed bar.
 - **`fixedBarWidth`**: (double) Width of the fixed bar.
@@ -66,6 +67,9 @@ RulerSlider(
   customLabels: ['Start', '10', '20', '30', '40', 'Middle', '60', '70', '80', '90', 'End'],
   onChanged: (double value) {
     print("Current value: \${value.toStringAsFixed(1)}");
+  },
+  onDragEnd: (double value) {
+    print("This is triggered only at the end");
   },
   showFixedBar: true,
   fixedBarColor: Colors.red,
